@@ -64,6 +64,18 @@ def is_search_engine(domain: str, title: str, description: str, body_text: str) 
     return _matches(haystack, config.SEARCH_ENGINE_KEYWORDS)
 
 
+# HTTP error codes that commonly appear in page titles when a request fails
+# (e.g. "404 Not Found", "500 Internal Server Error", "403 Forbidden").
+_ERROR_CODE_RE = re.compile(
+    r"\b(?:40[0-9]|41[0-9]|42[0-9]|50[0-9]|51[0-9]|52[0-9]|53[0-9])\b"
+)
+
+
+def has_error_code_in_title(title: str) -> bool:
+    """True if the page title contains an HTTP error code (e.g. 404, 500)."""
+    return bool(_ERROR_CODE_RE.search(title or ""))
+
+
 def is_dependency_registry(domain: str, title: str, description: str, body_text: str) -> bool:
     """True if the site is essentially a package/dependency registry or CDN.
 

@@ -70,6 +70,17 @@ class Spider:
         if not url or not domain:
             return
 
+        # Skip pages whose title contains an HTTP error code (e.g. "404 Not
+        # Found", "500 Internal Server Error"). These are dead/error pages.
+        if filters.has_error_code_in_title(data.title):
+            self.db.upsert_site(
+                url=url, domain=domain, title=data.title,
+                description=data.description, status="rejected",
+                reject_reason="error code in title",
+            )
+            self.db.log(url, "rejected", "error code in title")
+            return
+
         # If this URL is already a known seed, keep its seed category and
         # always keep it in the index (it is hand-picked and well-known).
         existing = self.db.get_site(url)

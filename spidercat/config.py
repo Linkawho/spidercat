@@ -188,4 +188,4 @@ OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "sparksammy/samantha-4-combo:small
 # Output / database paths.
 # ---------------------------------------------------------------------------
 DB_PATH: str = os.getenv("SPIDERCAT_DB", "spidercat.db")
-OUTPUT_PATH: str = os.getenv("SPIDERCAT_OUTPUT", "../../linkawho.github.io/LAW.md")
+OUTPUT_PATH: str = os.getenv("SPIDERCAT_OUTPUT", "../linkawho.github.io/LAW.md")
