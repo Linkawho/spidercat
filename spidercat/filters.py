@@ -64,6 +64,17 @@ def is_search_engine(domain: str, title: str, description: str, body_text: str) 
     return _matches(haystack, config.SEARCH_ENGINE_KEYWORDS)
 
 
+def is_dependency_registry(domain: str, title: str, description: str, body_text: str) -> bool:
+    """True if the site is essentially a package/dependency registry or CDN.
+
+    These are infrastructure, not interesting destinations, so they are never
+    auto-added. The domain itself is checked too, since registries often have
+    generic titles (e.g. 'npm').
+    """
+    haystack = f"{domain} {title} {description} {body_text[:2000]}"
+    return _matches(haystack, config.DEPENDENCY_KEYWORDS)
+
+
 def is_blocked_category(category: str) -> bool:
     return category in config.BLOCKED_AUTO_CATEGORIES
 
@@ -143,6 +154,38 @@ def popularity_score(
     return min(score, 10)
 
 
+def is_link_hub_without_novelty(
+    links: list[str],
+    known_domains: set[str],
+) -> tuple[bool, str]:
+    """True if a page is a "link hub" (many outbound links) whose links are
+    mostly to already-known domains.
+
+    A page that is mostly a directory of links to other well-known sites is not
+    a good spider root: it would just re-crawl the same sites. We only treat a
+    link-heavy page as a good root when a meaningful share of its outbound links
+    point to brand-new domains we have not already seen.
+    """
+    if config.MIN_NOVEL_LINK_RATIO <= 0:
+        return False, ""
+    if len(links) < config.LINK_HUB_MIN_LINKS:
+        return False, ""
+
+    novel = 0
+    for link in links:
+        d = extract_domain(link)
+        if d and d not in known_domains:
+            novel += 1
+
+    ratio = novel / len(links)
+    if ratio < config.MIN_NOVEL_LINK_RATIO:
+        return True, (
+            f"link hub with only {novel}/{len(links)} novel links "
+            f"(ratio {ratio:.0%} < {config.MIN_NOVEL_LINK_RATIO:.0%})"
+        )
+    return False, ""
+
+
 def should_auto_add(
     *,
     domain: str,
@@ -169,6 +212,9 @@ def should_auto_add(
 
     if is_search_engine(domain, title, description, body_text):
         return False, "search engine / web index detected"
+
+    if is_dependency_registry(domain, title, description, body_text):
+        return False, "dependency/package registry or CDN detected"
 
     if popularity < config.MIN_POPULARITY_SCORE:
         return False, f"popularity score {popularity} below threshold"

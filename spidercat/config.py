@@ -137,6 +137,17 @@ SEARCH_ENGINE_KEYWORDS: list[str] = [
     "wiby", "search.brave", "search engine and web index",
 ]
 
+# Dependency / package registries and CDNs are infrastructure, not interesting
+# destinations. A site that is essentially a package hub or content-delivery
+# network is never auto-added.
+DEPENDENCY_KEYWORDS: list[str] = [
+    "package registry", "package manager", "package index", "dependency",
+    "content delivery network", "cdn", "npm", "pypi", "maven", "crates.io",
+    "rubygems", "nuget", "composer", "docker hub", "container registry",
+    "apt", "homebrew", "chocolatey", "jsdelivr", "unpkg", "cdnjs",
+    "esm.sh", "skypack", "registry.npmjs",
+]
+
 # ---------------------------------------------------------------------------
 # Popularity / longevity heuristics.
 # ---------------------------------------------------------------------------
@@ -151,6 +162,19 @@ MIN_POPULARITY_SCORE: int = 5
 MAX_LINKS_PER_PAGE: int = 12
 # Maximum total pages to crawl in one run.
 MAX_PAGES_PER_RUN: int = 200
+
+# ---------------------------------------------------------------------------
+# Link-novelty heuristics. A page that is mostly a directory of links to other
+# sites (a "link farm") is not a good spider root. We only auto-add a site when
+# a meaningful share of its outbound links point to brand-new domains we have
+# not already seen, so we don't keep re-crawling the same well-known sites.
+# ---------------------------------------------------------------------------
+# Minimum fraction of outbound links that must point to brand-new domains for a
+# site to be considered a good root (0.0 = disabled).
+MIN_NOVEL_LINK_RATIO: float = 0.5
+# A site with at least this many outbound links is treated as a "link hub" and
+# must meet the novelty ratio above; smaller pages are exempt from the check.
+LINK_HUB_MIN_LINKS: int = 5
 
 # ---------------------------------------------------------------------------
 # AI configuration (OpenAI-compatible chat completions API).

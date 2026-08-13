@@ -59,6 +59,10 @@ class Spider:
         self.db.log("", "seed", f"seeded {len(config.SEED_URLS)} root URLs")
 
     # -- processing --------------------------------------------------------
+    def _known_domains(self) -> set[str]:
+        """All domains we have already seen (seeds + discovered sites)."""
+        return {filters.extract_domain(s["url"]) for s in self.db.all_sites()}
+
     def _process_page(self, data) -> None:
         """Categorize, filter, and persist a single crawled page."""
         url = filters.normalize_url(data.final_url or data.url)
@@ -111,6 +115,15 @@ class Spider:
             popularity=popularity,
             domain_age_years=None,
         )
+
+        # A page that is mostly a directory of links to already-known sites is
+        # not a good spider root, so reject it even if it otherwise passes.
+        if allow:
+            hub, hub_reason = filters.is_link_hub_without_novelty(
+                data.links, self._known_domains()
+            )
+            if hub:
+                allow, reason = False, hub_reason
 
         if allow:
             self.db.upsert_site(
